@@ -1,3 +1,5 @@
+import pandas as pd
+
 def parse_to_int(value: str) -> int:
     if value == 'x':
         return 1
@@ -34,5 +36,5 @@ def parse_to_str(value: int) -> str:
     else:
         raise ValueError(f"Invalid value: {value}")
     
-def parse_line(line:str)->list[int]:
-    return list(map(parse_to_int, line))
+def parse_line(line:str) -> pd.Series:
+    return pd.Series([parse_to_int(value) for value in line])
