@@ -1,24 +1,24 @@
 import pickle
 import pandas as pd
-from shared import *
 
-# Função para exibir o tabuleiro
+# Função para exibir o tabuleiro de forma formatada
 def print_board(board):
     for row in board:
         print(' | '.join(row))  # Exibe cada linha do tabuleiro
         print('-' * 5)          # Exibe o separador entre as linhas
-        
-def parse_mlp_result(result):
+
+# Função para converter o resultado do KMeans em uma string representativa
+def parse_result_kNN_Tree(result):
+    outcome_mapping = {-2: 'o_win', 2: 'x_win', 4: 'draw', 3: 'in_progress'}
+    return outcome_mapping[result]
+
+def parse_mlp_result_kMeans(result):
     parser_table = ["x_win","o_win","draw","in_progress"]
     for i in range(len(result)):
         if result[i] == 1:
             return parser_table[i]
-        
-def parse_k_means_result(result):
-    outcome_mapping = {0: 'o_win', 1: 'x_win', 2: 'draw', 3: 'in_progress'}
-    return outcome_mapping[result]
 
-# Função para a jogada de um jogador
+# Função para coletar a jogada de um jogador
 def player_move(board, player):
     while True:
         try:
@@ -33,14 +33,47 @@ def player_move(board, player):
         except (IndexError, ValueError):
             print("Posição inválida. Tente novamente.")
 
+# Função para verificar se o jogo acabou e determinar o vencedor
+def check_winner(board):
+    # Verifica linhas
+    for row in board:
+        if row[0] == row[1] == row[2] and row[0] != 'b':
+            return f"{row[0].lower()}_win"  # Retorna "x_win" ou "o_win"
+
+    # Verifica colunas
+    for col in range(3):
+        if board[0][col] == board[1][col] == board[2][col] and board[0][col] != 'b':
+            return f"{board[0][col].lower()}_win"  # Retorna "x_win" ou "o_win"
+
+    # Verifica diagonais
+    if board[0][0] == board[1][1] == board[2][2] and board[0][0] != 'b':
+        return f"{board[0][0].lower()}_win"  # Retorna "x_win" ou "o_win" (diagonal principal)
+    
+    if board[0][2] == board[1][1] == board[2][0] and board[0][2] != 'b':
+        return f"{board[0][2].lower()}_win"  # Retorna "x_win" ou "o_win" (diagonal secundária)
+
+    # Verifica empate (todas as posições preenchidas)
+    if all(cell != 'b' for row in board for cell in row):
+        return "draw"
+
+    # Se nenhuma das condições acima for atendida, o jogo continua
+    return "in_progress"
+
+# Converte o tabuleiro em uma string (para manipulação mais fácil)
 def board_to_string(board):
     return ','.join(cell for row in board for cell in row)
 
-# Função principal do jogo
+# Converte o tabuleiro em uma lista numérica para a entrada do modelo
+def board_to_numeric(board):
+    mapping = {'X': 1, 'O': -1, 'b': 0}
+    board_list = board_to_string(board).split(',')
+    return [mapping[cell] for cell in board_list]
+
+# Função principal que gerencia o jogo
 def tic_tac_toe_game():
-    # Inicializar o tabuleiro
+    # Inicializa o tabuleiro vazio
     board = [['b', 'b', 'b'], ['b', 'b', 'b'], ['b', 'b', 'b']]
-    current_player = 'X'  # O jogador X começa
+    current_player = 'X'
     opcao = 0
     
     while True:
@@ -55,56 +88,62 @@ def tic_tac_toe_game():
         
         if opcao in ['1', '2', '3', '4']:
             break
+        elif opcao == '5':
+            print("Obrigado por jogar!")
+            return 
         
-        print('POR FAVOR FIQUE!!!!!')
+        print('Escolha inválida. Tente novamente.')
 
+    # Loop principal do jogo
     while True:
         print_board(board)
-
-        board_string = board_to_string(board)
-        board_list = board_string.split(',')
-        print(board_list)
-        
-        mapping = {'X': 1, 'O': -1, 'b': 0}
-        board_numeric = [mapping[cell] for cell in board_list]
-
+        board_numeric = board_to_numeric(board)
         board_df = pd.DataFrame([board_numeric])
-        
+
+        # Carrega e usa o modelo selecionado
         if opcao == '1':
             with open('modelo_decision_tree.pkl', 'rb') as f:
                 modelo_carregado = pickle.load(f)
-    
-            y_pred_novo = modelo_carregado.predict(board_df)
-            
-            print(f"A IA disse que o jogo ta: {parse_to_str(y_pred_novo)}")
-            
-        if opcao == '3':
+        
+        elif opcao == '2':
+            with open('knn_model.pkl', 'rb') as f:
+                modelo_carregado = pickle.load(f)
+        
+        elif opcao == '3':
             with open('kmeans_model.pkl', 'rb') as f:
                 modelo_carregado = pickle.load(f)
-    
-            y_pred_novo = modelo_carregado.predict(board_df)
-            
-            print(f"A IA disse que o jogo ta: {parse_k_means_result(y_pred_novo[0])}")
         
-        if opcao == '4':
+        elif opcao == '4':
             with open('mlp_model.pkl', 'rb') as f:
                 modelo_carregado = pickle.load(f)
-    
-            y_pred_novo = modelo_carregado.predict(board_df)
-            
-            print(f"A IA disse que o jogo ta: {parse_mlp_result(y_pred_novo[0])}")
         
+        y_pred = modelo_carregado.predict(board_df)
+        
+        # Apresenta o resultado
+        if (opcao in ['1','2']):
+            print(f"A IA disse que o estado do jogo é: {parse_result_kNN_Tree(y_pred[0])}")
+        elif (opcao in ['3','4']):
+            print(f"A IA disse que o estado do jogo é: {parse_mlp_result_kMeans(y_pred[0])}")
+            
+        resultado_real = check_winner(board)
+        print(f"Resultado real: {resultado_real}")
+            
         # Jogada do jogador atual
         player_move(board, current_player)
         
         # Alternar o jogador
         current_player = 'O' if current_player == 'X' else 'X'
         
-        # Verificar se o tabuleiro está cheio e, se sim, encerrar o jogo
-        if all(cell != 'b' for row in board for cell in row):
-            print_board(board)  # Imprime o tabuleiro pela última vez
-            board_string = board_to_string(board)
-            print(f"Todas as posições foram preenchidas. Estado final do tabuleiro: {board_string}")
+        if resultado_real == ['x_win', 'o_win', 'draw']:
+            print_board(board)  # Exibe o tabuleiro final
+            print(f"Todas as posições foram preenchidas. Estado final: {board_to_string(board)}")
+            
+            # Apresenta o resultado
+            if (opcao in ['1','2']):
+                print(f"A IA disse que esse jogo deu: {parse_result_kNN_Tree(y_pred[0])}")
+            elif (opcao in ['3','4']):
+                print(f"A IA disse que esse jogo deu: {parse_mlp_result_kMeans(y_pred[0])}")
+                
             break
 
 # Iniciar o jogo
