@@ -12,7 +12,11 @@ def parse_result_kNN_Tree(result):
     outcome_mapping = {-2: 'o_win', 2: 'x_win', 4: 'draw', 3: 'in_progress'}
     return outcome_mapping[result]
 
-def parse_mlp_result_kMeans(result):
+def parse_result_k_means(result):
+    parser_table = ["x_win","o_win","draw","in_progress"]
+    return parser_table[result]
+
+def parse_mlp_result(result):
     parser_table = ["x_win","o_win","draw","in_progress"]
     for i in range(len(result)):
         if result[i] == 1:
@@ -122,8 +126,10 @@ def tic_tac_toe_game():
         # Apresenta o resultado
         if (opcao in ['1','2']):
             print(f"A IA disse que o estado do jogo é: {parse_result_kNN_Tree(y_pred[0])}")
-        elif (opcao in ['3','4']):
-            print(f"A IA disse que o estado do jogo é: {parse_mlp_result_kMeans(y_pred[0])}")
+        elif (opcao in ['4']):
+            print(f"A IA disse que o estado do jogo é: {parse_mlp_result(y_pred[0])}")
+        elif (opcao in ['3']):
+            print(f"A IA disse que o estado do jogo é: {parse_result_k_means(y_pred[0])}")
             
         resultado_real = check_winner(board)
         print(f"Resultado real: {resultado_real}")
@@ -141,8 +147,10 @@ def tic_tac_toe_game():
             # Apresenta o resultado
             if (opcao in ['1','2']):
                 print(f"A IA disse que esse jogo deu: {parse_result_kNN_Tree(y_pred[0])}")
-            elif (opcao in ['3','4']):
-                print(f"A IA disse que esse jogo deu: {parse_mlp_result_kMeans(y_pred[0])}")
+            elif (opcao in ['4']):
+                print(f"A IA disse que esse jogo deu: {parse_mlp_result(y_pred[0])}")
+            elif (opcao in ['3']):
+                print(f"A IA disse que esse jogo deu: {parse_result_k_means(y_pred[0])}")
                 
             break
 
