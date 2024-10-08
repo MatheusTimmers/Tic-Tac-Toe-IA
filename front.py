@@ -13,6 +13,10 @@ def parse_mlp_result(result):
     for i in range(len(result)):
         if result[i] == 1:
             return parser_table[i]
+        
+def parse_k_means_result(result):
+    outcome_mapping = {0: 'o_win', 1: 'x_win', 2: 'draw', 3: 'in_progress'}
+    return outcome_mapping[result]
 
 # Função para a jogada de um jogador
 def player_move(board, player):
@@ -73,6 +77,14 @@ def tic_tac_toe_game():
             y_pred_novo = modelo_carregado.predict(board_df)
             
             print(f"A IA disse que o jogo ta: {parse_to_str(y_pred_novo)}")
+            
+        if opcao == '3':
+            with open('kmeans_model.pkl', 'rb') as f:
+                modelo_carregado = pickle.load(f)
+    
+            y_pred_novo = modelo_carregado.predict(board_df)
+            
+            print(f"A IA disse que o jogo ta: {parse_k_means_result(y_pred_novo[0])}")
         
         if opcao == '4':
             with open('mlp_model.pkl', 'rb') as f:
