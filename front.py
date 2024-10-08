@@ -21,6 +21,16 @@ def parse_mlp_result(result):
     for i in range(len(result)):
         if result[i] == 1:
             return parser_table[i]
+        
+def parse_result(y_pred, opcao):
+    if opcao in ['1', '2']:  # Árvore de Decisão e kNN
+        return parse_result_kNN_Tree(y_pred[0])
+    elif opcao == '4':  # MLP
+        return parse_mlp_result(y_pred[0])
+    elif opcao == '3':  # KMeans
+        return parse_result_k_means(y_pred[0])
+    else:
+        return None
 
 # Função para coletar a jogada de um jogador
 def player_move(board, player):
@@ -79,6 +89,8 @@ def tic_tac_toe_game():
     board = [['b', 'b', 'b'], ['b', 'b', 'b'], ['b', 'b', 'b']]
     current_player = 'X'
     opcao = 0
+    total_predictions = 0
+    correct_predictions = 0
     
     while True:
         print('Escolha o algoritmo usado para a avaliação:')
@@ -103,6 +115,9 @@ def tic_tac_toe_game():
         print_board(board)
         board_numeric = board_to_numeric(board)
         board_df = pd.DataFrame([board_numeric])
+        
+        # Jogada do jogador atual
+        player_move(board, current_player)
 
         # Carrega e usa o modelo selecionado
         if opcao == '1':
@@ -123,35 +138,39 @@ def tic_tac_toe_game():
         
         y_pred = modelo_carregado.predict(board_df)
         
-        # Apresenta o resultado
-        if (opcao in ['1','2']):
-            print(f"A IA disse que o estado do jogo é: {parse_result_kNN_Tree(y_pred[0])}")
-        elif (opcao in ['4']):
-            print(f"A IA disse que o estado do jogo é: {parse_mlp_result(y_pred[0])}")
-        elif (opcao in ['3']):
-            print(f"A IA disse que o estado do jogo é: {parse_result_k_means(y_pred[0])}")
-            
+        resultado_real = check_winner(board)
+        print(f"Resultado real: {resultado_real}")
+        
+        ia_prediction = parse_result(y_pred, opcao)
+        print(f"A IA disse que o estado do jogo é: {ia_prediction}")
+
+        # Verifica se alguém venceu ou se o jogo terminou em empate
         resultado_real = check_winner(board)
         print(f"Resultado real: {resultado_real}")
             
-        # Jogada do jogador atual
-        player_move(board, current_player)
+        # Comparar a previsão da IA com o estado atual do jogo
+        total_predictions += 1
+        if ia_prediction == resultado_real:
+            print(f"A IA acertou! Previsão: {ia_prediction}")
+            correct_predictions += 1
+        else:
+            print(f"A IA errou. Previsão: {ia_prediction}, Resultado real: {resultado_real}")
         
         # Alternar o jogador
         current_player = 'O' if current_player == 'X' else 'X'
         
-        if resultado_real == ['x_win', 'o_win', 'draw']:
+        if resultado_real != 'in_progress':
             print_board(board)  # Exibe o tabuleiro final
-            print(f"Todas as posições foram preenchidas. Estado final: {board_to_string(board)}")
+            print(f"Todas as posições foram preenchidas. Estado final: {board_to_string(board)} " + str(resultado_real))
             
             # Apresenta o resultado
-            if (opcao in ['1','2']):
-                print(f"A IA disse que esse jogo deu: {parse_result_kNN_Tree(y_pred[0])}")
-            elif (opcao in ['4']):
-                print(f"A IA disse que esse jogo deu: {parse_mlp_result(y_pred[0])}")
-            elif (opcao in ['3']):
-                print(f"A IA disse que esse jogo deu: {parse_result_k_means(y_pred[0])}")
-                
+            print(f"A IA disse que esse jogo deu: {ia_prediction}")                
+
+            print('Total de predições: ' + str(total_predictions))
+            print('Predições corretas da IA: ' + str(correct_predictions))
+            print('Predições erradas da IA: ' + str(total_predictions - correct_predictions))
+
+            
             break
 
 # Iniciar o jogo
